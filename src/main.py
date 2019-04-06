@@ -1,11 +1,11 @@
-# ------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 #  File Name    : main.py
-#  Description  : Searches for keywords on websites and stores the data in a CSV
+#  Description  : Searches for keywords on websites and stores the results in a CSV
 #  Authors      : Liam Lawrence
 #  Created      : April 6, 2019
 #
 #  License      : GNU GPL v3
-# ------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 
 
 from urllib.parse import urlparse
@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 import time
 
 
+#
 #
 # Params:
 #           path: The path of the logging file
@@ -39,7 +40,8 @@ class Logger:
 # Params:
 #           website_url: The url to the webpage to scrape
 #
-# Return:   The text data from the webpage
+# Return:
+#           The text data from the webpage
 #
 # Description:
 #           Goes through and scrapes an HTML file for any text and returns it
@@ -58,9 +60,9 @@ def scrape_page(website_url):
         return ""
 
     logger.record("Scrapping:\t\t" + website_url)
-    soup = BeautifulSoup(html, 'html.parser')           # Put it inside the BeautifulSoup parser
 
     # Strip out all scripting and style elements
+    soup = BeautifulSoup(html, 'html.parser')
     for script in soup(["script", "style"]):
         script.decompose()
 
@@ -80,7 +82,8 @@ def scrape_page(website_url):
 #           url:            The current url being crawled
 #           domain:         The main domain of the website, used to make sure the crawler stays on the main website
 #
-# Return:   The filled url_list and crawled_urls lists
+# Return:
+#           The filled url_list and crawled_urls lists
 #
 # Description:
 #           Crawls through the website and puts all of the links it can find into lists
@@ -139,7 +142,7 @@ def main():
     csv = open("../res/results.csv", 'w')
     csv.write("Keyword, URL\n")
 
-    # log the startup message
+    # Print the startup message
     logger.record("Websites being used:")
     for site in websites:
         logger.record("\t- " + site)
@@ -165,7 +168,7 @@ def main():
             if domain != urlparse(url).netloc:
                 continue
 
-            # Scrape the page and get the text from it
+            # Scrape the page and parse the text from it
             text = scrape_page(url)
 
             # Check if any of the keywords are in the scraped text,
