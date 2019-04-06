@@ -9,5 +9,4 @@
 2) Place all of your keywords in keywords.txt
 3) Run the program from the src/ folder
 ----
-The list of matching websites will be saved in results.csv.
-All information printed to the console should be saved in log.txt
+The list of matching websites will be saved in results.csv
