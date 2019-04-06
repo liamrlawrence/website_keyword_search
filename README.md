@@ -1,10 +1,10 @@
 # website_keyword_search
 
-####Requirements
+#### Requirements
 - BeautifulSoup4
 - urllib
 
-####Setup
+#### Setup
 1) Place all of your urls in websites.txt
 2) Place all of your keywords in keywords.txt
 3) Run the program from the src/ folder
