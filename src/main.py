@@ -179,10 +179,9 @@ def main():
             # Scrape the page and parse the text from it
             text = scrape_page(url)
 
-            # Check if any of the keywords are in the scraped text,
+            # Check if any of the keywords are in the scraped text
             # and record the results in a csv file
             for word in keywords:
-                # if word.lower() in text.lower():
                 regex = r"\b" + re.escape(word) + r"\b"
                 if re.search(regex, text, flags=re.IGNORECASE):
                     csv.write(word + ", " + url + '\n')
