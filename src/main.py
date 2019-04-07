@@ -6,12 +6,11 @@
 #
 #  License      : GNU GPL v3
 # ----------------------------------------------------------------------------------
-
-
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from bs4 import BeautifulSoup
 import time
+import re
 
 
 #
@@ -52,22 +51,25 @@ def scrape_page(website_url):
         # however if that does not work or it is not an html file,
         # throw an exception
         html = urlopen(website_url)
-        if 'text/html' not in html.info().get_content_type():
-            logger.record("Error is file:\t" + website_url + "\tType: " + html.info().get_content_type())
+        if 'text/html' != html.info().get_content_type():
+            logger.record("Error is type [" + html.info().get_content_type() + "]:\t\t" + website_url)
             return ""
     except:
         logger.record("Error opening:\t" + website_url)
         return ""
 
-    logger.record("Scrapping:\t\t" + website_url)
+    logger.record("Scraping:\t\t" + website_url)
 
     # Strip out all scripting and style elements
     soup = BeautifulSoup(html, 'html.parser')
     for script in soup(["script", "style"]):
         script.decompose()
 
-    # Strip out unnecessary whitespace
+    # Strip out anything that is not an alphabetic character
     page_text = soup.get_text()
+    page_text = re.sub(r'[^a-zA-Z ]', '', page_text)
+
+    # Strip out unnecessary whitespace
     lines = (line.strip() for line in page_text.splitlines())
     chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
     page_text = '\n'.join(chunk for chunk in chunks if chunk)
@@ -90,7 +92,13 @@ def scrape_page(website_url):
 #
 def crawler(url_list, crawled_urls, url, domain):
     try:
-        html = urlopen(url)                             # Downloads the html page
+        # Try and open the website,
+        # however if that does not work or it is not an html file,
+        # throw an exception
+        html = urlopen(url)
+        if 'text/html' != html.info().get_content_type():
+            logger.record("Error is type [" + html.info().get_content_type() + "]:\t\t" + url)
+            return ""
     except:
         logger.record("Error crawling:\t" + url)
         return crawled_urls, url_list
@@ -174,7 +182,9 @@ def main():
             # Check if any of the keywords are in the scraped text,
             # and record the results in a csv file
             for word in keywords:
-                if word.lower() in text.lower():
+                # if word.lower() in text.lower():
+                regex = r"\b" + re.escape(word) + r"\b"
+                if re.search(regex, text, flags=re.IGNORECASE):
                     csv.write(word + ", " + url + '\n')
 
         # Clean out the url lists for the next website
