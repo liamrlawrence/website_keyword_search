@@ -55,7 +55,7 @@ def scrape_page(website_url):
             logger.record("Error is type [" + html.info().get_content_type() + "]:\t\t" + website_url)
             return ""
     except:
-        logger.record("Error opening:\t" + website_url)
+        logger.record("Error opening:\t\t" + website_url)
         return ""
 
     logger.record("Scraping:\t\t" + website_url)
@@ -100,7 +100,7 @@ def crawler(url_list, crawled_urls, url, domain):
             logger.record("Error is type [" + html.info().get_content_type() + "]:\t\t" + url)
             return ""
     except:
-        logger.record("Error crawling:\t" + url)
+        logger.record("Error crawling:\t\t" + url)
         return crawled_urls, url_list
 
     logger.record("Crawling:\t\t" + url)
