@@ -52,7 +52,7 @@ def scrape_page(website_url):
         # throw an exception
         html = urlopen(website_url)
         if 'text/html' != html.info().get_content_type():
-            logger.record("Error is type [" + html.info().get_content_type() + "]:\t\t" + website_url)
+            logger.record("Error scraping, is type [" + html.info().get_content_type() + "]:\t\t" + website_url)
             return ""
     except:
         logger.record("Error opening:\t\t" + website_url)
@@ -65,11 +65,8 @@ def scrape_page(website_url):
     for script in soup(["script", "style"]):
         script.decompose()
 
-    # Strip out anything that is not an alphabetic character
-    page_text = soup.get_text()
-    page_text = re.sub(r'[^a-zA-Z ]', '', page_text)
-
     # Strip out unnecessary whitespace
+    page_text = soup.get_text()
     lines = (line.strip() for line in page_text.splitlines())
     chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
     page_text = '\n'.join(chunk for chunk in chunks if chunk)
@@ -90,18 +87,28 @@ def scrape_page(website_url):
 # Description:
 #           Crawls through the website and puts all of the links it can find into lists
 #
-def crawler(url_list, crawled_urls, url, domain):
+
+
+#TODO: Find a way to make these not global variables
+#TODO: Currently it treats "https://url.com" and "https://url.com/" as separate urls, fix this
+#TODO: Some website have a pinterest / twitter facebook share button that has the tag
+#           href="//www.url.com?u=http://real_website.com"
+#       Which throws off the program because of the double slashes, trying to combat this with FIX_1
+crawled_urls = []
+url_list = []
+def crawler(url, domain):
     try:
         # Try and open the website,
         # however if that does not work or it is not an html file,
         # throw an exception
         html = urlopen(url)
         if 'text/html' != html.info().get_content_type():
-            logger.record("Error is type [" + html.info().get_content_type() + "]:\t\t" + url)
+            logger.record("Error crawling, is type [" + html.info().get_content_type() + "]:\t\t" + url)
+            crawled_urls.append(url)
             return ""
     except:
         logger.record("Error crawling:\t\t" + url)
-        return crawled_urls, url_list
+        return
 
     logger.record("Crawling:\t\t" + url)
     soup = BeautifulSoup(html, 'html.parser')           # Put it inside the BeautifulSoup parser
@@ -109,30 +116,53 @@ def crawler(url_list, crawled_urls, url, domain):
     crawled_urls.append(url)                            # Add the current parsed url to the crawled_urls list
     urls = soup.findAll("a")                            # Search for all "a" tags in the HTML
 
-    # Collect all all urls, however if they are not part of the base domain, ignore them
+    # Iterate through all of the "a" tags in the text
     for a in urls:
-        if (a.get("href")) and (a.get("href") not in url_list):
-            url_list.append(a.get("href"))
+        stripped_url = str(a)
 
-    # Parse all of the urls from the base domain
+        # Check if the a tag has a link
+        if ("href" in stripped_url):
+            stripped_url = stripped_url[stripped_url.find('href')+6:]
+            stripped_url = stripped_url[:stripped_url.find('"')]
+
+            #TODO: FIX_1
+            # Trying to avoid url stubs starting with "//"
+            try:
+                if stripped_url == '/' or (stripped_url[0] == '/' and stripped_url[1] == '/'):
+                    continue
+            except:
+                logger.record("Short Url:\t\t" + stripped_url)
+
+            # If the url is a stub, add the base url to the beginning
+            if (stripped_url[0] == '/'):
+                base_url = "http://" + domain
+                stripped_url = base_url + stripped_url
+
+            # If the url is not in the list already, add it
+            if (stripped_url not in url_list):
+                url_list.append(stripped_url)
+            else:
+                continue
+
+    # Parse all of the urls in the url list
     for page in set(url_list):
 
         # Check if the url belong to the same domain
         # And if this url is already parsed ignore it
         if (urlparse(page).netloc == domain) and (page not in crawled_urls):
-
             # Recursively crawl through
-            crawler(url_list, crawled_urls, page, domain)
+            crawler(page, domain)
 
-    # Once all urls are crawled return the list to calling function
-    else:
-        return crawled_urls, url_list
+        # If the url has been crawled before or is not part of the base domain, skip
+        else:
+            continue
+
+    # Once all urls are crawled, exit the function
+    return
 
 
 def main():
     websites = []
-    list_of_urls = []
-    list_of_crawled_urls = []
     keywords = []
 
     # Reads in the data from the input files and
@@ -164,10 +194,14 @@ def main():
     # Crawl the websites to get the urls, then search
     # each one of those pages for the specified keywords
     for site in websites:
+        # Crawl through the urls of the domain
         domain = urlparse(site).netloc
-        list_of_crawled_urls, list_of_urls = crawler(list_of_urls, list_of_crawled_urls, site, domain)
+        crawler(site, domain)
+        list_of_urls = url_list
+        list_of_crawled_urls = crawled_urls
 
-        for url in list_of_urls:
+        # Iterate through all of the crawled urls
+        for url in set(list_of_urls):
             # Appends the base url to the link stubs
             if url[0] == '/':
                 url = site + url
@@ -189,6 +223,8 @@ def main():
         # Clean out the url lists for the next website
         list_of_urls.clear()
         list_of_crawled_urls.clear()
+        crawled_urls.clear()
+        url_list.clear()
 
     # Close out of results.csv file
     csv.close()
