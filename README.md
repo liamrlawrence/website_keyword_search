@@ -11,7 +11,6 @@
 ----
 #### Regex
 Currently the regex does the following changes to the scraped text
-- Removes all non-alphabetical characters (such as symbols and numbers)
 - Ignores capitalization
 - Removes unnecessary whitespace
 ----
